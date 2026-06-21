@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <PackageId>SeasonVision</PackageId>
+    <Version>0.1.0</Version>
+    <Title>SeasonVision</Title>
+    <Authors>SeasonRealms</Authors>
+    <Company>SeasonRealms</Company>
+    <Product>SeasonVision</Product>
+    <Description>SeasonVision is a .NET computer vision library built on ONNX Runtime, providing image classification, face detection, face landmarks, emotion recognition, face attributes, object detection, and instance segmentation helpers.</Description>
+    <PackageTags>computer-vision;onnx;onnxruntime;image-classification;face-detection;face-landmarks;emotion-recognition;object-detection;instance-segmentation</PackageTags>
+    <PackageProjectUrl>https://github.com/SeasonRealms/SeasonVision</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SeasonRealms/SeasonVision</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Copyright>Copyright (c) 2026 SeasonRealms</Copyright>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' != ''">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.26.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

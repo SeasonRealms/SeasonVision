@@ -2,7 +2,7 @@
 
 SeasonVision is a .NET computer vision library built on top of ONNX Runtime. It provides lightweight helpers for common inference scenarios such as image classification, object detection, face detection, face landmarks, face emotion recognition, face attribute analysis, and instance segmentation.
 
-- Repository: [SeasonRealms/SeasonTTS](https://github.com/SeasonRealms/SeasonTTS)
+- Repository: [SeasonRealms/SeasonVision](https://github.com/SeasonRealms/SeasonVision)
 
 ## Features
 

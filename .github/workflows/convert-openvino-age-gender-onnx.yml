@@ -55,7 +55,24 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install openvino openvino2onnx onnx onnxruntime
+          # openvino2onnx 仍依赖 onnx.mapping；该模块在 onnx 1.19 中已移除。
+          pip install openvino openvino2onnx "onnx<1.19" onnxruntime
+
+      - name: Print Python package versions
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python - <<'PY'
+          import onnx
+          import onnxruntime as ort
+          import openvino
+          import openvino2onnx
+
+          print("onnx:", onnx.__version__)
+          print("onnxruntime:", ort.__version__)
+          print("openvino:", openvino.__version__)
+          print("openvino2onnx:", openvino2onnx.__version__)
+          PY
 
       # ============================================================
       # 2. 下载官方 xml + bin

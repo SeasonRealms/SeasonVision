@@ -1,0 +1,192 @@
+name: Convert OpenVINO Age-Gender IR To ONNX
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: "OpenVINO 模型名"
+        required: true
+        default: "age-gender-recognition-retail-0013"
+      openvino_ir_base_url:
+        description: "官方 OpenVINO IR 基础下载地址（不含文件名）"
+        required: true
+        default: "https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/age-gender-recognition-retail-0013/FP32"
+      opset:
+        description: "导出的 ONNX opset 版本"
+        required: true
+        default: "19"
+      python_version:
+        description: "Python 版本"
+        required: true
+        default: "3.11"
+
+permissions:
+  contents: read
+
+jobs:
+  convert-openvino-ir-to-onnx:
+    runs-on: ubuntu-latest
+
+    env:
+      OUT_DIR: out
+
+    steps:
+      # ============================================================
+      # 1. 环境准备
+      # ============================================================
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ github.event.inputs.python_version }}"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: >-
+            pip-${{ runner.os }}-openvino2onnx-${{ github.event.inputs.python_version }}-${{ github.event.inputs.opset }}
+          restore-keys: |
+            pip-${{ runner.os }}-openvino2onnx-${{ github.event.inputs.python_version }}-
+            pip-${{ runner.os }}-openvino2onnx-
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openvino openvino2onnx onnx onnxruntime
+
+      # ============================================================
+      # 2. 下载官方 xml + bin
+      # ============================================================
+      - name: Download official OpenVINO IR files
+        shell: bash
+        env:
+          MODEL_NAME: ${{ github.event.inputs.model_name }}
+          BASE_URL: ${{ github.event.inputs.openvino_ir_base_url }}
+        run: |
+          set -euxo pipefail
+
+          mkdir -p "${OUT_DIR}/ir"
+
+          curl -L --retry 5 --retry-delay 10 --retry-all-errors \
+            "${BASE_URL}/${MODEL_NAME}.xml" \
+            -o "${OUT_DIR}/ir/${MODEL_NAME}.xml"
+
+          curl -L --retry 5 --retry-delay 10 --retry-all-errors \
+            "${BASE_URL}/${MODEL_NAME}.bin" \
+            -o "${OUT_DIR}/ir/${MODEL_NAME}.bin"
+
+          ls -lh "${OUT_DIR}/ir"
+
+      # ============================================================
+      # 3. 转换为 ONNX
+      # ============================================================
+      - name: Convert IR xml + bin to ONNX
+        shell: bash
+        env:
+          MODEL_NAME: ${{ github.event.inputs.model_name }}
+          OPSET: ${{ github.event.inputs.opset }}
+        run: |
+          set -euxo pipefail
+
+          mkdir -p "${OUT_DIR}/onnx"
+
+          openvino2onnx \
+            "${OUT_DIR}/ir/${MODEL_NAME}.xml" \
+            "${OUT_DIR}/onnx/${MODEL_NAME}.onnx" \
+            -s \
+            --check \
+            --checker-backend onnxruntime \
+            -v "${OPSET}"
+
+      # ============================================================
+      # 4. 校验导出的 ONNX 并生成 manifest
+      # ============================================================
+      - name: Validate ONNX and write manifest
+        shell: python
+        env:
+          MODEL_NAME: ${{ github.event.inputs.model_name }}
+          BASE_URL: ${{ github.event.inputs.openvino_ir_base_url }}
+          OPSET: ${{ github.event.inputs.opset }}
+        run: |
+          import json
+          import os
+          from pathlib import Path
+
+          import onnx
+          import onnxruntime as ort
+
+          out_dir = Path(os.environ["OUT_DIR"]).resolve()
+          model_name = os.environ["MODEL_NAME"]
+          base_url = os.environ["BASE_URL"]
+          opset = int(os.environ["OPSET"])
+
+          onnx_path = out_dir / "onnx" / f"{model_name}.onnx"
+          if not onnx_path.exists():
+              raise FileNotFoundError(f"Converted ONNX not found: {onnx_path}")
+
+          model = onnx.load(str(onnx_path))
+          onnx.checker.check_model(model)
+
+          session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
+
+          inputs = []
+          for item in session.get_inputs():
+              inputs.append({
+                  "name": item.name,
+                  "shape": item.shape,
+                  "type": item.type,
+              })
+
+          outputs = []
+          for item in session.get_outputs():
+              outputs.append({
+                  "name": item.name,
+                  "shape": item.shape,
+                  "type": item.type,
+              })
+
+          manifest = {
+              "model_name": model_name,
+              "source_format": "OpenVINO IR",
+              "target_format": "ONNX",
+              "source_base_url": base_url,
+              "ir_files": [
+                  f"{model_name}.xml",
+                  f"{model_name}.bin",
+              ],
+              "onnx_file": f"{model_name}.onnx",
+              "opset": opset,
+              "input_count": len(inputs),
+              "output_count": len(outputs),
+              "inputs": inputs,
+              "outputs": outputs,
+              "onnx_size_bytes": onnx_path.stat().st_size,
+          }
+
+          manifest_path = out_dir / "onnx" / "conversion-manifest.json"
+          manifest_path.write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          print(json.dumps(manifest, ensure_ascii=False, indent=2))
+
+      # ============================================================
+      # 5. 上传 Artifacts
+      # ============================================================
+      - name: Upload converted ONNX
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.model_name }}-onnx
+          path: out/onnx/
+          if-no-files-found: error
+
+      - name: Upload original IR files
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.model_name }}-openvino-ir
+          path: out/ir/
+          if-no-files-found: error

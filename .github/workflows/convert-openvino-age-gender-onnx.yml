@@ -110,12 +110,14 @@ jobs:
 
           mkdir -p "${OUT_DIR}/onnx"
 
+          # 不使用 openvino2onnx 自带的 --check。
+          # 该版本在 OpenVINO IR -> ONNX 场景下会进入内部 check_accuracy，
+          # 并尝试把源 .xml 当作 ONNX 读取，导致 "Wire format was corrupt"。
+          # 后续步骤会用 onnx.checker + onnxruntime 进行显式校验。
           openvino2onnx \
             "${OUT_DIR}/ir/${MODEL_NAME}.xml" \
             "${OUT_DIR}/onnx/${MODEL_NAME}.onnx" \
             -s \
-            --check \
-            --checker-backend onnxruntime \
             -v "${OPSET}"
 
       # ============================================================

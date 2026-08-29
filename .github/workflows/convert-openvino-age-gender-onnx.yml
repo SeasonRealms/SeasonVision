@@ -4,19 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       model_name:
-        description: "OpenVINO 模型名"
+        description: "OpenVINO model name"
         required: true
         default: "age-gender-recognition-retail-0013"
       openvino_ir_base_url:
-        description: "官方 OpenVINO IR 基础下载地址（不含文件名）"
+        description: "Official OpenVINO IR base download URL (without file name)"
         required: true
         default: "https://storage.openvinotoolkit.org/repositories/open_model_zoo/2022.1/models_bin/2/age-gender-recognition-retail-0013/FP32"
       opset:
-        description: "导出的 ONNX opset 版本"
+        description: "Exported ONNX opset version"
         required: true
         default: "19"
       python_version:
-        description: "Python 版本"
+        description: "Python version"
         required: true
         default: "3.11"
 
@@ -32,7 +32,7 @@ jobs:
 
     steps:
       # ============================================================
-      # 1. 环境准备
+      # 1. Environment setup
       # ============================================================
       - name: Checkout current repo
         uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          # openvino2onnx 仍依赖 onnx.mapping；该模块在 onnx 1.19 中已移除。
+          # openvino2onnx still depends on onnx.mapping; this module was removed in onnx 1.19.
           pip install openvino openvino2onnx "onnx<1.19" onnxruntime
 
       - name: Print Python package versions
@@ -75,7 +75,7 @@ jobs:
           PY
 
       # ============================================================
-      # 2. 下载官方 xml + bin
+      # 2. Download official xml + bin
       # ============================================================
       - name: Download official OpenVINO IR files
         shell: bash
@@ -98,7 +98,7 @@ jobs:
           ls -lh "${OUT_DIR}/ir"
 
       # ============================================================
-      # 3. 转换为 ONNX
+      # 3. Convert to ONNX
       # ============================================================
       - name: Convert IR xml + bin to ONNX
         shell: bash
@@ -110,10 +110,10 @@ jobs:
 
           mkdir -p "${OUT_DIR}/onnx"
 
-          # 不使用 openvino2onnx 自带的 --check。
-          # 该版本在 OpenVINO IR -> ONNX 场景下会进入内部 check_accuracy，
-          # 并尝试把源 .xml 当作 ONNX 读取，导致 "Wire format was corrupt"。
-          # 后续步骤会用 onnx.checker + onnxruntime 进行显式校验。
+          # Do not use openvino2onnx built-in --check.
+          # In this version, the OpenVINO IR -> ONNX path enters internal check_accuracy
+          # and tries to read the source .xml as ONNX, causing "Wire format was corrupt".
+          # The next step performs explicit validation with onnx.checker + onnxruntime.
           openvino2onnx \
             "${OUT_DIR}/ir/${MODEL_NAME}.xml" \
             "${OUT_DIR}/onnx/${MODEL_NAME}.onnx" \
@@ -121,7 +121,7 @@ jobs:
             -v "${OPSET}"
 
       # ============================================================
-      # 4. 校验导出的 ONNX 并生成 manifest
+      # 4. Validate exported ONNX and write manifest
       # ============================================================
       - name: Validate ONNX and write manifest
         shell: python
@@ -194,7 +194,7 @@ jobs:
           print(json.dumps(manifest, ensure_ascii=False, indent=2))
 
       # ============================================================
-      # 5. 上传 Artifacts
+      # 5. Upload artifacts
       # ============================================================
       - name: Upload converted ONNX
         uses: actions/upload-artifact@v4

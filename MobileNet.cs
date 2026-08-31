@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 // https://github.com/SeasonRealms/SeasonVision
 
-namespace SeasonVision;
+namespace Season.Vision;
 
 /// <summary>
 /// MobileNet v2 image classification inference.
@@ -15,7 +15,7 @@ public static class MobileNet
     private const int InputSize = 224;
     private const int TopK = 3;
 
-    public static string Detect(string model, ReadOnlySpan<byte> imageData, int width, int height)
+    public static string Detect(InferenceSession session, ReadOnlySpan<byte> imageData, int width, int height)
     {
         var rgb = ImageProcessor.ExtractRgb(imageData, width, height);
         var mean = new[] { 0.485f, 0.456f, 0.406f };
@@ -37,7 +37,6 @@ public static class MobileNet
             NamedOnnxValue.CreateFromTensor("input", input)
         };
 
-        using var session = new InferenceSession(model);
         using var results = session.Run(inputs);
 
         IEnumerable<float> output = results.First().AsEnumerable<float>();
@@ -55,8 +54,8 @@ public static class MobileNet
             .ToList();
 
         var builder = new StringBuilder();
-        builder.AppendLine($"Top {topPredictions.Count} predictions for MobileNet v2...");
-        builder.AppendLine("--------------------------------------------------------------");
+        builder.AppendLine($"Top {topPredictions.Count} predictions for MobileNet v2");
+        builder.AppendLine("-----------------------------------------------");
 
         foreach (var prediction in topPredictions)
         {

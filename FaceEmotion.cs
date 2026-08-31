@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 // https://github.com/SeasonRealms/SeasonVision
 
-namespace SeasonVision;
+namespace Season.Vision;
 
 /// <summary>
 /// Face emotion recognition.
@@ -12,7 +12,6 @@ namespace SeasonVision;
 /// </summary>
 public static class FaceEmotion
 {
-
     private static readonly string[] DefaultLabels =
     [
         "Neutral",
@@ -30,36 +29,23 @@ public static class FaceEmotion
     private const int MaxRankedScores = 3;
 
     public static FaceEmotionResult Detect(
-        string model,
+        InferenceSession detectorSession,
+        InferenceSession recognizerSession,
         ReadOnlySpan<byte> imageData, int width, int height,
-        string detectorModel,
         bool createAnnotatedImage = false,
         int maxFaces = 5)
     {
-        //ArgumentNullException.ThrowIfNull(imageResult);
-
-        if (string.IsNullOrWhiteSpace(model))
-            throw new ArgumentException("Model path cannot be empty.", nameof(model));
-
-        if (string.IsNullOrWhiteSpace(detectorModel))
-            throw new ArgumentException("Face detector model path cannot be empty.", nameof(detectorModel));
-
         if (maxFaces <= 0)
             throw new ArgumentOutOfRangeException(nameof(maxFaces), "maxFaces must be greater than 0.");
 
-        //if (!DeviceServices.Core.LoadFileExists(model))
-        //    throw new FileNotFoundException($"FaceEmotion ONNX model file was not found: {model}", model);
-
-        //string modelPath = DeviceServices.Core.LoadFilePath(model);
-        using var session = new InferenceSession(model);
-        var config = GetModelConfig(session);
-        var detectorFaces = Ultraface.Detect(detectorModel, imageData, width, height, false, maxFaces);
+        var config = GetModelConfig(recognizerSession);
+        var detectorFaces = Ultraface.Detect(detectorSession, imageData, width, height, false, maxFaces);
         var rgb = ImageProcessor.ExtractRgb(imageData, width, height);
 
         var result = new FaceEmotionResult
         {
-            Model = model,
-            DetectorModel = detectorModel,
+            Model = null, //model,
+            DetectorModel = null, // detectorModel,
             ImageWidth = width,
             ImageHeight = height,
             RequestedMaxFaces = maxFaces,
@@ -80,7 +66,7 @@ public static class FaceEmotion
                 NamedOnnxValue.CreateFromTensor(config.InputName, input)
             };
 
-            using var outputs = session.Run(inputs);
+            using var outputs = recognizerSession.Run(inputs);
             var prediction = Decode(outputs, config.Labels);
 
             result.Faces.Add(new FaceEmotionFace
@@ -166,7 +152,6 @@ public static class FaceEmotion
 
         var pixels = ImageProcessor.EnsureRgba(imageData, width, height);
         int thickness = Math.Max(2, Math.Min(width, height) / 300);
-        //var font = new Season.Fonts.Font("Sample/Ravie.ttf", FontSize, false);
 
         foreach (var face in faces)
         {
@@ -185,9 +170,6 @@ public static class FaceEmotion
         }
 
         return pixels;
-
-        //var annotated = new NativeImageData(imageResult.Width, imageResult.Height, pixels);
-        //return ImageUtils.SaveAsJpeg(annotated, quality: 90);
     }
 
     private static FaceSquareCrop ExpandSquareCrop(UltrafaceBox box, int imageWidth, int imageHeight)
@@ -472,6 +454,14 @@ public sealed class FaceEmotionResult
     public string[] EmotionLabels { get; set; } = [];
     public List<FaceEmotionFace> Faces { get; set; } = new();
     public byte[] AnnotatedImage { get; set; } = [];
+
+    public string Summary
+    {
+        get
+        {
+            return String.Join("\r\n", Faces.Select(fa => $"Index:{fa.Index} Confidence:{fa.DetectionConfidence} Emotion:{fa.Emotion} EmotionConfidence:{fa.EmotionConfidence} BoundingBox:{fa.BoundingBox.Xmin} {fa.BoundingBox.Ymin} {fa.BoundingBox.Xmax} {fa.BoundingBox.Ymax} CropBox:{fa.CropBox.Xmin} {fa.CropBox.Ymin} {fa.CropBox.Xmax} {fa.CropBox.Ymax} Scores:{fa.Scores.Count}"));
+        }
+    }
 }
 
 public sealed class FaceEmotionFace

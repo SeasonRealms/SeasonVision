@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 // https://github.com/SeasonRealms/SeasonVision
 
-namespace SeasonVision;
+namespace Season.Vision;
 
 /// <summary>
 /// Ultraface face detection inference.
@@ -18,14 +18,14 @@ public static class Ultraface
     private const float NmsIouThreshold = 0.3f;
     private const int FontSize = 16;
 
-    public static UltrafaceFaceResult Detect(string model, ReadOnlySpan<byte> imageData,
+    public static UltrafaceFaceResult Detect(InferenceSession session, ReadOnlySpan<byte> imageData,
         int width,
         int height, bool createAnnotatedImage = false, int maxFaces = int.MaxValue)
     {
         var result = new UltrafaceFaceResult();
 
         var displayImage = ImageProcessor.ResizeShortestEdge(imageData, width, height, DisplayShortestEdge);
-        var faces = DetectFaces(model, imageData, width, height, maxFaces);
+        var faces = DetectFaces(session, imageData, width, height, maxFaces);
 
         if (createAnnotatedImage)
         {
@@ -36,7 +36,6 @@ public static class Ultraface
             else
             {
                 var pixels = ImageProcessor.EnsureRgba(imageData, width, height);
-                //var font = new Season.Fonts.Font("Sample/Ravie.ttf", FontSize, false);
                 float scaleX = (float)width / width;
                 float scaleY = (float)height / height;
 
@@ -62,7 +61,7 @@ public static class Ultraface
         return result;
     }
 
-    static List<UltrafaceFace> DetectFaces(string model, ReadOnlySpan<byte> imageData,
+    static List<UltrafaceFace> DetectFaces(InferenceSession session, ReadOnlySpan<byte> imageData,
         int width,
         int height, 
         int maxFaces = int.MaxValue)
@@ -87,7 +86,6 @@ public static class Ultraface
             NamedOnnxValue.CreateFromTensor("input", input)
         };
 
-        using var session = new InferenceSession(model);
         using var results = session.Run(inputs);
         var resultsArray = results.ToArray();
         float[] confidences = resultsArray[0].AsEnumerable<float>().ToArray();
@@ -355,4 +353,12 @@ public sealed class UltrafaceFaceResult
     public List<UltrafaceFace> Faces { get; set; } = new();
 
     public byte[] AnnotatedImage { get; set; } = [];
+
+    public string Summary
+    {
+        get
+        {
+            return String.Join("\r\n", Faces.Select(fa => $"Xmin:{fa.Box.Xmin} Ymin:{fa.Box.Ymin} Xmax:{fa.Box.Xmax} Ymax:{fa.Box.Ymax} Width:{fa.Box.Width} Height:{fa.Box.Height} Confidence:{fa.Confidence}"));
+        }
+    }
 }

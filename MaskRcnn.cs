@@ -2,9 +2,7 @@
 // Licensed under the MIT License.
 // https://github.com/SeasonRealms/SeasonVision
 
-using static SeasonVision.MaskRcnn;
-
-namespace SeasonVision;
+namespace Season.Vision;
 
 public class MaskRcnn
 {
@@ -97,6 +95,15 @@ public class MaskRcnn
         public float Confidence { get; set; }
         public float[] Mask { get; set; } = null!;
         public bool MaskIsProbability { get; set; }
+
+        public string Summary
+        {
+            get
+            {
+                string mask = Mask?.Length > 0 ? Mask.Length.ToString() : "0"; // String.Join(", ", Mask) : String.Empty;
+                return $"Xmin:{Box.Xmin} Ymin:{Box.Ymin} Xmax:{Box.Xmax} Ymax:{Box.Ymax} Label:{Label} Mask:{mask} Confidence:{Confidence} MaskIsProbability:{MaskIsProbability}";
+            }
+        }
     }
 
     public class Box
@@ -114,9 +121,19 @@ public class MaskRcnn
 
     public sealed class MaskRcnnResult
     {
-        public List<Prediction> Prediction { get; set; } = new();
+        public List<Prediction> Predictions { get; set; } = new();
 
         public byte[] AnnotatedImage { get; set; } = [];
+
+        public string Summary
+        {
+            get
+            {
+                var pres = Predictions.Select(pre => pre.Summary);
+
+                return String.Join("\r\n", pres);
+            }
+        }
     }
 
 
@@ -128,7 +145,7 @@ public class MaskRcnn
         (70, 130, 180),  (244, 164, 96),  (218, 112, 214), (255, 192, 203),
     };
 
-    public static MaskRcnnResult Detect(string model, ReadOnlySpan<byte> imageData, int width, int height, bool createAnnotatedImage = false)
+    public static MaskRcnnResult Detect(InferenceSession session, ReadOnlySpan<byte> imageData, int width, int height, bool createAnnotatedImage = false)
     {
         var result = new MaskRcnnResult();
 
@@ -157,16 +174,6 @@ public class MaskRcnn
         {
             NamedOnnxValue.CreateFromTensor("image", input)
         };
-
-        var sessionOptions = new SessionOptions()
-        {
-            //GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
-            //ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
-        };
-
-        //sessionOptions.AppendExecutionProvider_DML();
-
-        using var session = new InferenceSession(model, sessionOptions);
 
         using var results = session.Run(inputs);
         var resultsArray = results.ToArray();
@@ -220,7 +227,7 @@ public class MaskRcnn
             LogMaskDebug(idx, prediction, width, height);
         }
 
-        result.Prediction = predictions;
+        result.Predictions = predictions;
 
         if (createAnnotatedImage)
         {
@@ -239,7 +246,6 @@ public class MaskRcnn
 
             if (predictions.Count > 0)
             {
-                //var font = new Season.Fonts.Font("Sample/Ravie.ttf", fontSize, false);
                 int colorIdx = 0;
 
                 foreach (var p in predictions)

@@ -4,7 +4,7 @@
 
 //https://github.com/yakhyo/pipnet-onnx
 
-namespace SeasonVision;
+namespace Season.Vision;
 
 /// <summary>
 /// PIPNet ONNX face landmark detection.
@@ -19,62 +19,26 @@ public static class FaceLandmark
     private static readonly float[] ImageNetStd = { 0.229f, 0.224f, 0.225f };
 
     public static FaceLandmarkResult Detect(
-        string model,
+        InferenceSession detectorSession,
+        InferenceSession recognizerSession,
         ReadOnlySpan<byte> imageData, int width, int height,
-        string detectorModel,
         bool createAnnotatedImage = false,
         bool drawConnections = false,
         int maxFaces = 5)
     {
-        //ArgumentNullException.ThrowIfNull(imageResult);
-
-        //var option1 = new SessionOptions();
-        //option1.AppendExecutionProvider_CPU();
-        //var session1 = new InferenceSession(@"model1.onnx", option1);
-
-        //var option2 = new SessionOptions();
-        //option2.AppendExecutionProvider_DML();
-        //var session2 = new InferenceSession(@"model2.onnx", option2);
-
-        //var option3 = new SessionOptions();
-        //option3.AppendExecutionProvider_CUDA();
-        //var session3 = new InferenceSession(@"model3.onnx", option3);
-
-        if (string.IsNullOrWhiteSpace(model))
-            throw new ArgumentException("Model path cannot be empty.", nameof(model));
-
-        if (string.IsNullOrWhiteSpace(detectorModel))
-            throw new ArgumentException("Face detector model path cannot be empty.", nameof(detectorModel));
 
         if (maxFaces <= 0)
             throw new ArgumentOutOfRangeException(nameof(maxFaces), "maxFaces must be greater than 0.");
 
-        //if (!DeviceServices.Core.LoadFileExists(model))
-        //    throw new FileNotFoundException($"PIPNet ONNX model file was not found: {model}", model);
-
-        //string modelPath = DeviceServices.Core.LoadFilePath(model);
-
-        var option = new SessionOptions()
-        {
-            // 1) Required by the DML execution provider.
-            ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
-            EnableMemoryPattern = false,
-
-            // 2) Recommended: enable full graph optimizations because DML benefits significantly from them.
-            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
-        };
-        option.AppendExecutionProvider_DML();
-
-        using var session = new InferenceSession(model, option);
-        var config = GetModelConfig(session);
+        var config = GetModelConfig(recognizerSession);
         var reverseInfo = PIPNetMeanface.GetReverseInfo(config.NumLandmarks, NumNeighbors);
-        var detectorFaces = Ultraface.Detect(detectorModel, imageData, width, height, false, maxFaces);
+        var detectorFaces = Ultraface.Detect(detectorSession, imageData, width, height, false, maxFaces);
         var rgb = ImageProcessor.ExtractRgb(imageData, width, height);
 
         var result = new FaceLandmarkResult
         {
-            Model = model,
-            DetectorModel = detectorModel,
+            Model = null, //model,
+            DetectorModel = null, //detectorModel,
             ImageWidth = width,
             ImageHeight = height,
             RequestedMaxFaces = maxFaces,
@@ -104,7 +68,7 @@ public static class FaceLandmark
                 NamedOnnxValue.CreateFromTensor(config.InputName, input)
             };
 
-            using var outputs = session.Run(inputs);
+            using var outputs = recognizerSession.Run(inputs);
             var landmarks = Decode(outputs, config, reverseInfo, crop);
 
             result.Faces.Add(new FaceLandmarkFace
@@ -669,6 +633,14 @@ public sealed class FaceLandmarkResult
     public int InputHeight { get; set; }
     public List<FaceLandmarkFace> Faces { get; set; } = new();
     public byte[] AnnotatedImage { get; set; } = [];
+
+    public string Summary
+    {
+        get
+        {
+            return String.Join("\r\n", Faces.Select(fa => $"Index:{fa.Index} Confidence:{fa.Confidence} BoundingBox:{fa.BoundingBox.Xmin} {fa.BoundingBox.Ymin} {fa.BoundingBox.Xmax} {fa.BoundingBox.Ymax} CropBox:{fa.CropBox.Xmin} {fa.CropBox.Ymin} {fa.CropBox.Xmax} {fa.CropBox.Ymax} LandMarks:{fa.Landmarks.Count}"));
+        }
+    }
 }
 
 public sealed class FaceLandmarkFace

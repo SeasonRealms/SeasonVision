@@ -2,9 +2,7 @@
 // Licensed under the MIT License.
 // https://github.com/SeasonRealms/SeasonVision
 
-using static SeasonVision.MaskRcnn;
-
-namespace SeasonVision;
+namespace Season.Vision;
 
 public class FasterRcnn
 {
@@ -99,7 +97,7 @@ public class FasterRcnn
     /// <param name="model">Path to the ONNX model file, for example "Sample/FasterRCNN-12-qdq.onnx".</param>
     /// <param name="imageData">RGBA image bytes.</param>
     /// <returns>A result object containing predictions and an optional annotated image.</returns>
-    public static FasterRcnnResult Detect(string model, ReadOnlySpan<byte> imageData, int width, int height, bool createAnnotatedImage = false)
+    public static FasterRcnnResult Detect(InferenceSession session, ReadOnlySpan<byte> imageData, int width, int height, bool createAnnotatedImage = false)
     {
         var result = new FasterRcnnResult();
 
@@ -129,7 +127,6 @@ public class FasterRcnn
             NamedOnnxValue.CreateFromTensor("image", input)
         };
 
-        using var session = new InferenceSession(model);
         using var results = session.Run(inputs);
         var resultsArray = results.ToArray();
 
@@ -184,8 +181,6 @@ public class FasterRcnn
 
             if (predictions.Count > 0)
             {
-                //var font = new Season.Fonts.Font("Sample/Ravie.ttf", fontSize, false);
-
                 foreach (var p in predictions)
                 {
                     DrawBox(pixels, width, height, p);
@@ -372,5 +367,15 @@ public class FasterRcnn
         public List<Prediction> Predictions { get; set; } = new();
 
         public byte[] AnnotatedImage { get; set; } = [];
+
+        public string Summary
+        {
+            get
+            {
+                var pres = Predictions.Select(pre => $"Xmin:{pre.Box.Xmin} Ymin:{pre.Box.Ymin} Xmax:{pre.Box.Xmax} Ymax:{pre.Box.Ymax} Label:{pre.Label} Confidence:{pre.Confidence}");
+
+                return String.Join("\r\n", pres);
+            }
+        }
     }
 }

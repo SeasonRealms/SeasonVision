@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 // https://github.com/SeasonRealms/SeasonVision
 
-namespace SeasonVision;
+namespace Season.Vision;
 
 /// <summary>
 /// Shared image preprocessing helpers for vision models.

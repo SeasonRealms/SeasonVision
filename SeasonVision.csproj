@@ -9,7 +9,7 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <PackageId>SeasonVision</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Title>SeasonVision</Title>
     <Authors>SeasonRealms</Authors>
     <Company>SeasonRealms</Company>

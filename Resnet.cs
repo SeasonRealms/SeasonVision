@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 // https://github.com/SeasonRealms/SeasonVision
 
-namespace SeasonVision;
+namespace Season.Vision;
 
 public class Resnet
 {
@@ -1015,7 +1015,7 @@ public class Resnet
     /// <param name="model">Path to the ONNX model file, for example "Sample/Resnet50-v1-12-qdq.onnx".</param>
     /// <param name="imageData">RGBA image bytes.</param>
     /// <returns>Top-10 prediction summary text.</returns>
-    public static string Detect(string model, ReadOnlySpan<byte> imageData, int width, int height)
+    public static string Detect(InferenceSession session, ReadOnlySpan<byte> imageData, int width, int height)
     {
         const int inputSize = 224;
         //var modelFilePath = DeviceServices.Core.LoadFilePath(model);
@@ -1039,7 +1039,6 @@ public class Resnet
             NamedOnnxValue.CreateFromTensor("data", input)
         };
 
-        using var session = new InferenceSession(model);
         using var results = session.Run(inputs);
 
         // Apply softmax post-processing.
@@ -1055,8 +1054,8 @@ public class Resnet
 
         // Build the human-readable result text.
         var sb = new StringBuilder();
-        sb.AppendLine("Top 10 predictions for ResNet50 v2...");
-        sb.AppendLine("--------------------------------------------------------------");
+        sb.AppendLine("Top 10 predictions for ResNet50 v2");
+        sb.AppendLine("-----------------------------------------------");
         foreach (var t in top10)
         {
             sb.AppendLine($"Label: {t.Label}, Confidence: {t.Confidence:F4}");

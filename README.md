@@ -44,6 +44,19 @@ The current source includes helpers for models similar to:
 - MobileNet v2 image classification
 - ResNet50 image classification
 
+Reference models used by the current helpers:
+
+| Local File Name | Upstream Project | Official Weights Page | License | Notes |
+|---|---|---|---|---|
+| `Age-gender-recognition-retail-0013.onnx` | OpenVINO Open Model Zoo | [age-gender-recognition-retail-0013](https://docs.openvino.ai/2023.3/omz_models_model_age_gender_recognition_retail_0013.html) | `Apache-2.0` | Intel retail age/gender model from Open Model Zoo. |
+| `Emotion-ferplus-8.onnx` | ONNX Model Zoo / FERPlus | [emotion-ferplus-8](https://huggingface.co/onnxmodelzoo/emotion-ferplus-8) | `MIT` | The model card body says `MIT`; the Hugging Face metadata tag also shows `apache-2.0`, so keep that mismatch in mind when redistributing. |
+| `Mobilenetv2-12.onnx` | ONNX Model Zoo | [mobilenetv2-12](https://huggingface.co/onnxmodelzoo/mobilenetv2-12) | `Apache-2.0` | Image classification model used by `MobileNet`. |
+| `Resnet50-v1-12-qdq.onnx` | ONNX Model Zoo | [resnet](https://github.com/onnx/models/tree/main/validated/vision/classification/resnet) | `Apache-2.0` | Quantized ResNet50 variant used by `Resnet`. |
+| `Ultraface_version-RFB-320.onnx` | Ultra-Light-Fast-Generic-Face-Detector-1MB | [UltraFace](https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB) | `MIT` | `version-RFB-320` face detector export. |
+| `Pipnet_r18_wflw_98.onnx` | PIPNet ONNX | [pipnet-onnx](https://github.com/yakhyo/pipnet-onnx/releases/tag/weights) | `MIT` | 98-point WFLW face landmark model. |
+| `FasterRCNN-12-qdq.onnx` | ONNX Model Zoo | [faster-rcnn](https://github.com/onnx/models/tree/main/validated/vision/object_detection_segmentation/faster-rcnn) | `MIT` | Quantized Faster R-CNN R-50-FPN model. |
+| `MaskRCNN-12-qdq.onnx` | ONNX Model Zoo | [mask-rcnn](https://github.com/onnx/models/tree/main/validated/vision/object_detection_segmentation/mask-rcnn) | `MIT` | Quantized Mask R-CNN R-50-FPN model. |
+
 ## API Overview
 
 Most APIs accept:

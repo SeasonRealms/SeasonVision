@@ -26,7 +26,7 @@ SeasonVision is a .NET computer vision library built on top of ONNX Runtime. It 
 Add the package reference once a NuGet package is published:
 
 ```xml
-<PackageReference Include="SeasonVision" Version="0.1.0" />
+<PackageReference Include="SeasonVision" Version="0.2.0" />
 ```
 
 For local development, reference the project directly from your solution.

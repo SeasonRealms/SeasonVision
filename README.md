@@ -4,6 +4,8 @@ SeasonVision is a .NET computer vision library built on top of ONNX Runtime. It 
 
 - Repository: [SeasonRealms/SeasonVision](https://github.com/SeasonRealms/SeasonVision)
 
+- Models: https://huggingface.co/SeasonEngine/Vision
+
 ## Features
 
 - Image classification with `MobileNet` and `Resnet`
